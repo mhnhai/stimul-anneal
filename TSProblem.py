@@ -1,7 +1,6 @@
-import random
-import math
-import TraversalPath
+from TraversalPath import *
 import matplotlib.pyplot as plt
+
 
 class TSProblem:
     def __init__(self, cities):
@@ -11,7 +10,7 @@ class TSProblem:
     # max_iteration is each iteration in the main loop
     # temperature is the default temperature
     # verbose is to print stats to the console if necessary, 0=no print, 1=print
-    # if stop_iter > 0, the main loop will stop if it didnt find a better solution after stop_iter
+    # if stop_iter > 0, the main loop will stop if it didn't find a better solution after stop_iter
     def run(self, max_iteration=100, temperature=1.0, verbose=0, stop_iter=-1):
         # initialize the path randomly
         current_solution = TraversalPath(random.sample(self.cities, len(self.cities)))
@@ -27,7 +26,7 @@ class TSProblem:
             new_solution.mutate()
             new_result = new_solution.get_path_length()
 
-            if self.accept_proba_(current_result, new_result, temperature) >= random.random():
+            if self._accept_proba(current_result, new_result, temperature) >= random.random():
                 current_solution = new_solution
                 current_result = new_result
                 chain = 0
@@ -43,16 +42,16 @@ class TSProblem:
             if chain == stop_iter and stop_iter > 0:
                 break
 
-            temperature = self.decrease_temperature_(temperature, i)
+            temperature = self._decrease_temperature(temperature, i)
 
         return best_solution.path, best_result
 
     @staticmethod
-    def decrease_temperature_(temp, iteration) -> float:
+    def _decrease_temperature(temp, iteration) -> float:
         return temp / (1 + 0.001 * iteration)
 
     @staticmethod
-    def accept_proba_(prev_result, next_res, temperature) -> float:
+    def _accept_proba(prev_result, next_res, temperature) -> float:
         # always accept path that's shorter that the previous path
         if next_res < prev_result:
             return 1.0
@@ -60,32 +59,6 @@ class TSProblem:
             return math.exp((prev_result - next_res)/temperature)
         except ZeroDivisionError:
             return 0.0
-
-class TraversalPath:
-    def __init__(self, path):
-        self.path = path
-
-    @staticmethod
-    def swap_random_pair(arr):
-        i, j = random.sample(range(0, len(arr)), 2)
-        arr[i], arr[j] = arr[j], arr[i]
-        return arr
-
-    def mutate(self, max_iter=2):
-        for i in range(max_iter):
-            self.path = self.swap_random_pair(self.path)
-
-    def get_path_length(self):
-        total_length = 0
-        for i in range(len(self.path) - 1):
-            city_a = self.path[i]
-            city_b = self.path[i + 1]
-            total_length += math.sqrt((city_b[0] - city_a[0]) ** 2 + (city_b[1] - city_a[1]) ** 2)
-
-        first = self.path[0]
-        last = self.path[-1]
-        total_length += math.sqrt((first[0] - last[0]) ** 2 + (first[1] - last[1]) ** 2)
-        return total_length
 
 
 def plot_tsp_solution(cities, best_path):

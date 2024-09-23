@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from TSProblem import TSProblem, plot_tsp_solution
 from CityGenerator import *
 

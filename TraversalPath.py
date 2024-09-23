@@ -1,6 +1,7 @@
 import math
 import random
 
+
 class TraversalPath:
     def __init__(self, path):
         self.path = path
