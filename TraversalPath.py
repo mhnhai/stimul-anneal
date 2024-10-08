@@ -12,8 +12,9 @@ class TraversalPath:
         arr[i], arr[j] = arr[j], arr[i]
         return arr
 
-    def mutate(self, max_iter=1):
-        for i in range(max_iter):
+    def mutate(self, temperature, city_num):
+        iter = max(round(temperature * city_num / 2.0), 1)
+        for i in range(iter):
             self.path = self.swap_random_pair(self.path)
 
     def get_path_length(self):

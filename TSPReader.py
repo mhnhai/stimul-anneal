@@ -4,6 +4,12 @@ class TSPReader:
         self.solution_path = solution_path
         self.problem = self.read_tsp_file(problem_path)
         self.solution = self.read_tsp_solution_file(solution_path)
+
+        print("TS PROBLEM INFORMATION")
+        print("CITIES")
+        print(self.problem)
+        print(self.solution)
+
     def read_tsp_file(self, filename):
         with open(filename, 'r') as file:
             lines = file.readlines()
@@ -46,7 +52,7 @@ class TSPReader:
                 try:
                     node = int(line)
                     if node != -1:
-                        tour.append(node)
+                        tour.append(node-1)
                 except ValueError:
                     continue
 
