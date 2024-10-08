@@ -12,7 +12,7 @@ class TraversalPath:
         arr[i], arr[j] = arr[j], arr[i]
         return arr
 
-    def mutate(self, max_iter=2):
+    def mutate(self, max_iter=1):
         for i in range(max_iter):
             self.path = self.swap_random_pair(self.path)
 
