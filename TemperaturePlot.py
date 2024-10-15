@@ -16,7 +16,7 @@ values = [initial_temp]
 values2 = [initial_temp]
 
 for i in range(iterations-1):
-    values.append(decrease_temperature2(values[i], 0.5, i, initial_temp))
+    values.append(decrease_temperature2(values[i], 0.005, i, initial_temp))
     values2.append(decrease_temperature(values2[i], i))
 
 plt.plot(iteration_values, values, label="Hyperbolic decay")
