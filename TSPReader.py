@@ -9,6 +9,8 @@ class TSPReader:
         print("CITIES")
         print(self.problem)
         print(self.solution)
+
+
     def read_tsp_file(self, filename):
         with open(filename, 'r') as file:
             lines = file.readlines()
@@ -27,7 +29,7 @@ class TSPReader:
             if reading_coordinates:
                 parts = line.split()
                 if len(parts) == 3:
-                    coordinates.append((float(parts[1]), float(parts[2])))
+                    coordinates.append((float(parts[1]), float(parts[2]), int(parts[0])))
 
         return coordinates
 
