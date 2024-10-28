@@ -53,5 +53,4 @@ class TSPReader:
                         tour.append(node-1)
                 except ValueError:
                     continue
-
         return tour

@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import math
 import random
+from numba import njit
 
 
 class TSProblem:
     def __init__(self, cities):
         self.cities = cities
         self.stored_results = []
+        self.stored_probability = []
 
     def generate_greedy_solution(self):
         unvisited = self.cities[:]
@@ -40,25 +42,34 @@ class TSProblem:
             new_solution = TraversalPath(current_solution.path[:])
             new_solution.mutate(temperature, city_count)
             new_result = new_solution.get_path_length()
-            if self._accept_proba(current_result, new_result, temperature, beta) >= random.random():
+
+            probability = self._accept_proba(current_result, new_result, temperature, beta)
+            if probability > 0 and probability < 1:
+                self.stored_probability.append(probability)
+
+            if probability >= random.random():
                 current_solution, current_result = new_solution, new_result
-                self.stored_results.append(current_solution.path[:])
+                self.stored_results.append(current_solution)
 
             temperature = self._decrease_temperature(temperature, alpha, i, initial_temp)
 
-        self.stored_results.append(current_solution.path[:])
+        self.stored_results.append(current_solution)
         return current_solution.path, current_result
 
     @staticmethod
+    @njit
     def _decrease_temperature(temp, alpha, iteration, initial_temp) -> float:
         return initial_temp / (1 + (alpha * iteration))
 
     @staticmethod
+    @njit
     def _accept_proba(prev_res, next_res, temperature, beta) -> float:
-        if next_res <= prev_res:
+        if next_res < prev_res:
             return 1.0
         try:
-            return 1.0/(1.0 + math.exp((next_res - prev_res) * beta / temperature))
+            #print((next_res - prev_res) * beta)
+            result = (math.exp(-math.pow(next_res - prev_res, 2) * beta / temperature))
+            return result
         except:
             return 0.0
 
@@ -100,6 +111,7 @@ def plot_tsp_solution(cities, best_path, best_actual_path):
 
 
 def plot_tsp_solution_animation(cities, best_actual_path, frames, max_frames=1200):
+    frames = [i.path for i in frames]
     if len(frames) > max_frames:
         cropped = random.sample(frames[0:-1], max_frames - 1) + [frames[-1]]
         cropped.sort(key=lambda x: frames.index(x))
@@ -131,3 +143,23 @@ def plot_tsp_solution_animation(cities, best_actual_path, frames, max_frames=120
     ani = animation.FuncAnimation(fig, update, frames=len(frames), init_func=init, blit=True, repeat=False, interval=1)
     plt.tight_layout()
     plt.show()
+
+
+def create_proba_plot(tsp: TSProblem):
+    plt.figure()  # Create a new figure for the probability plot
+    data = tsp.stored_probability
+    plt.tight_layout()
+    plt.plot(data)
+    plt.title('Probability Plot')  # Optional: Add a title
+    plt.xlabel('X-axis label')      # Optional: Add x-axis label
+    plt.ylabel('Probability')        # Optional: Add y-axis label                    # Display the plot
+
+def create_distance_plot(tsp: TSProblem):
+    plt.figure()  # Create a new figure for the distance plot
+    res = tsp.stored_results
+    data = [i.get_path_length() for i in res]
+    plt.tight_layout()
+    plt.plot(data)
+    plt.title('Distance Plot')       # Optional: Add a title
+    plt.xlabel('X-axis label')        # Optional: Add x-axis label
+    plt.ylabel('Distance')            # Optional: Add y-axis label

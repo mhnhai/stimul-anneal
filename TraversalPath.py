@@ -1,6 +1,6 @@
 import math
 import random
-
+from numba import njit
 
 class TraversalPath:
     distance_cache = {}
@@ -14,6 +14,11 @@ class TraversalPath:
         arr[i:j + 1] = reversed(arr[i:j + 1])
         return arr
 
+    def mutate(self, temperature, city_num):
+        iteration = max(round(temperature * city_num), 1)
+        for _ in range(iteration):
+            self.path = self.reverse_subsequence(self.path)
+
     @classmethod
     def get_distance(cls, city_a, city_b) -> float:
         key = tuple(sorted([city_a, city_b]))
@@ -21,11 +26,6 @@ class TraversalPath:
             distance = math.sqrt((city_b[0] - city_a[0]) ** 2 + (city_b[1] - city_a[1]) ** 2)
             cls.distance_cache[key] = distance
         return cls.distance_cache[key]
-
-    def mutate(self, temperature, city_num):
-        iteration = max(round(temperature * city_num), 1)
-        for _ in range(iteration):
-            self.path = self.reverse_subsequence(self.path)
 
     def get_path_length(self):
         total_length = 0
