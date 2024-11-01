@@ -1,10 +1,10 @@
-from TSProblem import TSProblem, plot_tsp_solution_animation, create_proba_plot, create_distance_plot
+from TSProblem import TSProblem, plot_tsp_solution_animation
 from TSPReader import *
 import time
 
 from TraversalPath import TraversalPath
 
-file = "gr202"
+file = "ch130"
 filename = f'./dataset/{file}.tsp'
 file_solution = f'./dataset/{file}.opt.tour'
 
@@ -16,25 +16,24 @@ TraversalPath._pre_calculate_distance_matrix(tsp_reader.problem)
 tsp = TSProblem(tsp_reader.problem)
 
 start_time = time.time()
-solution = tsp.run(max_iteration=100000, temperature=1.0, alpha=0.005, beta=5e-2)
-end_time = time.time()
-
-print("STIMULATED ANNEALING")
-print("Best path found length:", solution.get_path_length())
-print(f"The function took {(end_time - start_time):.4f} seconds to run.")
-
-start_time = time.time()
 greedy_solution = tsp.generate_greedy_solution()
 end_time = time.time()
 
 print("GREEDY ALGORITHM")
-print("Best path found length:", greedy_solution.get_path_length())
+print(f"Best path found length: {greedy_solution.get_path_length():.4f}")
 print(f"The function took {(end_time - start_time):.4f} seconds to run.")
 
-create_proba_plot(tsp)
-create_distance_plot(tsp)
+start_time = time.time()
+solution = tsp.run(max_iteration=160000, temperature=1.0, alpha=5e-2, beta=1e-4)
+end_time = time.time()
+
+print("STIMULATED ANNEALING")
+print(f"Best path found length: {solution.get_path_length():.4f}")
+print(f"The function took {(end_time - start_time):.4f} seconds to run.")
+
 plot_tsp_solution_animation(cities=tsp_reader.problem,
-                            frames=tsp.stored_results,
+                            tsp=tsp,
+                            #frames=tsp.stored_results,
                             #other_paths=[{'name': 'Greedy Algorithm', 'cities': greedy_solution.path}],
                             best_actual_path=tsp_reader.solution,
                             max_frames=1500)

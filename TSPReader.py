@@ -5,10 +5,7 @@ class TSPReader:
         self.problem = self.read_tsp_file(problem_path)
         self.solution = self.read_tsp_solution_file(solution_path)
 
-        print("TS PROBLEM INFORMATION")
-        print("CITIES")
-        print(self.problem)
-        print(self.solution)
+        print(f"TS PROBLEM CONSISTS OF {len(self.problem)} CITIES")
 
 
     def read_tsp_file(self, filename):

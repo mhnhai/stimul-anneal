@@ -1,7 +1,6 @@
 import math
 import random
-
-from PyQt6.sip import array
+from itertools import repeat
 from numba import njit
 
 class TraversalPath:
@@ -11,19 +10,14 @@ class TraversalPath:
         self.path = path
         self.num_cities = len(path)
 
-    @staticmethod
-    def reverse_subsequence(arr):
-        i, j = sorted(random.sample(range(0, len(arr)), 2))
-        arr[i:j + 1] = reversed(arr[i:j + 1])
-        return arr
-
     def mutate(self, temperature, city_num):
         iteration = max(round(temperature * city_num), 1)
-        for _ in range(iteration):
-            self.path = self.reverse_subsequence(self.path)
+        for _ in repeat(None, iteration):
+            i, j = sorted(random.sample(range(0, self.num_cities), 2))
+            self.path[i:j + 1] = reversed(self.path[i:j + 1])
 
     @classmethod
-    def get_distance(cls, city_a, city_b) -> float:
+    def _get_distance(cls, city_a:set, city_b:set) -> float:
         return cls.distance_matrix[city_a[2]-1][city_b[2]-1]
 
     @classmethod
@@ -34,17 +28,12 @@ class TraversalPath:
         for i in range(num_cities):
             for j in range(i+1, num_cities):
                 city_a, city_b = cities[i], cities[j]
-                dist = TraversalPath._quick_distance(city_a[0], city_b[0], city_a[1], city_b[1])
+                dist = math.sqrt((city_a[0] - city_b[0])**2 + (city_a[1] - city_b[1])**2)
                 cls.distance_matrix[city_a[2]-1][city_b[2]-1] = dist
                 cls.distance_matrix[city_b[2]-1][city_a[2]-1] = dist
 
-    @staticmethod
-    @njit
-    def _quick_distance(ax, bx, ay, by):
-        return math.sqrt((bx-ax)**2 + (by-ay)**2)
-
     def get_path_length(self):
         total_length = sum(
-            self.get_distance(self.path[i], self.path[i + 1]) for i in range(-1, self.num_cities-1)
+            self._get_distance(self.path[i], self.path[i + 1]) for i in range(-1, self.num_cities-1)
         )
         return total_length

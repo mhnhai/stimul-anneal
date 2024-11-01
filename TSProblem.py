@@ -1,16 +1,15 @@
-import itertools
-
 from TraversalPath import *
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import math
 import random
-from numba import njit
+from matplotlib.gridspec import GridSpec
 
 
 class TSProblem:
     def __init__(self, cities):
         self.cities = cities
+        self.city_count = len(self.cities)
         self.stored_results = []
         self.stored_probability = []
 
@@ -21,7 +20,7 @@ class TSProblem:
         path = [current_city]
 
         while unvisited:
-            nearest_city = min(unvisited, key=lambda city: TraversalPath.get_distance(current_city, city))
+            nearest_city = min(unvisited, key=lambda city: TraversalPath._get_distance(current_city, city))
             path.append(nearest_city)
             unvisited.remove(nearest_city)
             current_city = nearest_city
@@ -40,7 +39,6 @@ class TSProblem:
         tp = TraversalPath([])
 
         def calculate_lower_bound(current_cost, current_city, unvisited):
-            # Simple lower bound: add the minimum edge cost from each unvisited city
             bound = current_cost
             for city in unvisited:
                 min_edge = float('inf')
@@ -54,7 +52,6 @@ class TSProblem:
         def backtrack(current_city, count, cost, path):
             nonlocal min_cost, final_path
 
-            # Check if we can complete the tour
             if count == num_cities and tp.distance_matrix[current_city][0]:
                 total_cost = cost + tp.distance_matrix[current_city][0]
                 if total_cost < min_cost:
@@ -62,13 +59,9 @@ class TSProblem:
                     final_path = path + [0]
                 return
 
-            # Get unvisited cities
             unvisited = set(range(num_cities)) - set(path)
-
-            # Calculate lower bound
             lower_bound = calculate_lower_bound(cost, current_city, unvisited)
 
-            # Prune if lower bound exceeds current best
             if lower_bound >= min_cost:
                 return
 
@@ -80,45 +73,49 @@ class TSProblem:
                               path + [next_city])
                     visited[next_city] = False
 
-        visited[0] = True  # Start from the first city
+        visited[0] = True
         backtrack(0, 1, 0, [0])
         return TraversalPath([self.cities[i] for i in final_path])
 
 
-    def run(self, max_iteration=100, temperature=1.0, greedy_solution=False, alpha=0.001, beta=0.1) -> TraversalPath:
-        current_solution = self.generate_greedy_solution() if greedy_solution else self.generate_random_solution()
-        current_result = current_solution.get_path_length()
-        print(f"Initial distance: {current_result}")
+    def run(self, max_iteration=100, temperature=1.0, early_return=10000, initial_solution:TraversalPath=None,
+            alpha=0.001, beta=0.1) -> TraversalPath:
+        current_solution = initial_solution if initial_solution is not None else self.generate_random_solution()
+        current_length = current_solution.get_path_length()
 
-        city_count = len(self.cities)
         initial_temp = temperature
+        chain = 0
         i = 0
         while i < max_iteration:
             new_solution = TraversalPath(current_solution.path[:])
-            new_solution.mutate(temperature, city_count)
-            new_result = new_solution.get_path_length()
+            new_solution.mutate(temperature, self.city_count)
+            new_length = new_solution.get_path_length()
 
-            probability = self._accept_proba(current_result, new_result, temperature, beta)
-            if probability > 0 and probability < 1:
+            probability = self._accept_proba(current_length, new_length, temperature, beta)
+            if 0 < probability < 1:
                 self.stored_probability.append(probability)
 
             if probability >= random.random():
-                current_solution, current_result = new_solution, new_result
+                current_solution = new_solution
+                current_length = new_length
                 self.stored_results.append(current_solution)
+                chain = 0
+            else:
+                chain += 1
+                if chain > early_return:
+                    break
 
-            temperature = self._decrease_temperature(temperature, alpha, i, initial_temp)
+            temperature = self._decrease_temperature(alpha, i, initial_temp)
             i += 1
 
         self.stored_results.append(current_solution)
         return current_solution
 
     @staticmethod
-    # @njit
-    def _decrease_temperature(temp, alpha, iteration, initial_temp) -> float:
+    def _decrease_temperature(alpha, iteration, initial_temp) -> float:
         return initial_temp / (1 + (alpha * iteration))
 
     @staticmethod
-    # @njit
     def _accept_proba(prev_res, next_res, temperature, beta) -> float:
         if next_res < prev_res:
             return 1.0
@@ -133,16 +130,14 @@ def _display_actual_path(best_actual_path, cities):
     path_closed = path_unclosed + [path_unclosed[0]] # close the loop
     actual_path_x, actual_path_y, _z = zip(*path_closed)
     plt.plot(actual_path_x, actual_path_y, linestyle="-", zorder=0, alpha=0.2,
-             linewidth=5, label="Best Actual Path")
+             linewidth=5, label="Optimal Path")
     pth = TraversalPath(path_unclosed)
-    print(f"Best optimal path distance: {pth.get_path_length()}")
+    print(f"\nBest optimal path distance: {pth.get_path_length():.4f}")
 
 
 def _display_other_path(cities, pathname):
     actual_path_x, actual_path_y, _z = zip(*cities)
     plt.plot(actual_path_x, actual_path_y, linestyle="--", alpha=0.3, linewidth=3, label=pathname)
-    pth = TraversalPath(cities)
-    print(f"{pathname} distance: {pth.get_path_length()}")
 
 
 def _display_info():
@@ -153,33 +148,21 @@ def _display_info():
     plt.legend()
 
 
-def plot_tsp_solution(cities, best_path, best_actual_path):
-    plt.figure(figsize=(9, 9))
-    x, y = zip(*cities)
-
-    plt.scatter(x, y, color='blue', s=20, alpha=0.7, label='Cities')
-
-    best_path_full = best_path + [best_path[0]]
-    path_x, path_y = zip(*best_path_full)
-    plt.plot(path_x, path_y, color='cornflowerblue', linewidth=1.4, alpha=0.7, label='Best Path Found')
-
-    if best_actual_path:
-        _display_actual_path(best_actual_path, cities)
-
-    _display_info()
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_tsp_solution_animation(cities, best_actual_path, frames, max_frames=1200, other_paths=[]):
+def plot_tsp_solution_animation(cities, best_actual_path, tsp, max_frames=1200, other_paths=[]):
+    frames = tsp.stored_results
     frames = [i.path for i in frames]
     if len(frames) > max_frames:
         cropped = random.sample(frames[0:-1], max_frames - 1) + [frames[-1]]
         cropped.sort(key=lambda x: frames.index(x))
         frames = cropped
 
-    fig, ax = plt.subplots(figsize=(8, 8))
-    #ax.set_aspect("equal")
+
+    fig = plt.figure(figsize=(18, 9))
+    fig.tight_layout()
+    gs = GridSpec(2, 3, figure=fig)
+    ax = fig.add_subplot(gs[:, 0:2])
+    #ax = fig.add_subplot(2, 2, (1, 3))
+
     x, y, _z = zip(*cities)
 
     if best_actual_path:
@@ -189,8 +172,26 @@ def plot_tsp_solution_animation(cities, best_actual_path, frames, max_frames=120
         _display_other_path(path['cities'], path['name'])
 
     ax.scatter(x, y, color='slateblue', s=20, label='Cities', zorder=1)
-    current_path_line, = ax.plot([], [], color='cornflowerblue', zorder=2, linewidth=1.4, label='Current Path')
+    current_path_line, = ax.plot([], [], color='cornflowerblue', zorder=2, linewidth=1.4, label='Stimulated annealing')
     _display_info()
+
+    ax2 = fig.add_subplot(gs[0, 2:])
+    #ax2 = fig.add_subplot(2, 2, 2)
+    data = tsp.stored_probability
+    ax2.plot(data)
+    ax2.set_title('Probability Plot')
+    ax2.set_xlabel('Iterations')
+    ax2.set_ylabel('Probability')
+
+    # Distance plot (bottom right)
+    ax3 = fig.add_subplot(gs[1, 2:])
+    #ax3 = fig.add_subplot(2, 2, 4)
+    res = tsp.stored_results
+    data = [i.get_path_length() for i in res]
+    ax3.plot(data)
+    ax3.set_title('Distance Plot')
+    ax3.set_xlabel('Iterations')
+    ax3.set_ylabel('Distance')
 
     def init():
         current_path_line.set_data([], [])
@@ -205,24 +206,5 @@ def plot_tsp_solution_animation(cities, best_actual_path, frames, max_frames=120
 
     ani = animation.FuncAnimation(fig, update, frames=len(frames), init_func=init, blit=True, repeat=False, interval=1)
     plt.tight_layout()
+    plt.get_current_fig_manager().full_screen_toggle()
     plt.show()
-
-
-def create_proba_plot(tsp: TSProblem):
-    plt.figure()  # Create a new figure for the probability plot
-    data = tsp.stored_probability
-    plt.tight_layout()
-    plt.plot(data)
-    plt.title('Probability Plot')  # Optional: Add a title
-    plt.xlabel('X-axis label')      # Optional: Add x-axis label
-    plt.ylabel('Probability')        # Optional: Add y-axis label                    # Display the plot
-
-def create_distance_plot(tsp: TSProblem):
-    plt.figure()  # Create a new figure for the distance plot
-    res = tsp.stored_results
-    data = [i.get_path_length() for i in res]
-    plt.tight_layout()
-    plt.plot(data)
-    plt.title('Distance Plot')       # Optional: Add a title
-    plt.xlabel('X-axis label')        # Optional: Add x-axis label
-    plt.ylabel('Distance')            # Optional: Add y-axis label
