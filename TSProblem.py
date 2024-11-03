@@ -161,7 +161,6 @@ def plot_tsp_solution_animation(cities, best_actual_path, tsp, max_frames=1200, 
     fig.tight_layout()
     gs = GridSpec(2, 3, figure=fig)
     ax = fig.add_subplot(gs[:, 0:2])
-    #ax = fig.add_subplot(2, 2, (1, 3))
 
     x, y, _z = zip(*cities)
 
@@ -172,20 +171,17 @@ def plot_tsp_solution_animation(cities, best_actual_path, tsp, max_frames=1200, 
         _display_other_path(path['cities'], path['name'])
 
     ax.scatter(x, y, color='slateblue', s=20, label='Cities', zorder=1)
-    current_path_line, = ax.plot([], [], color='cornflowerblue', zorder=2, linewidth=1.4, label='Stimulated annealing')
+    current_path_line, = ax.plot([], [], color='salmon', zorder=2, linewidth=1.4, label='Stimulated annealing')
     _display_info()
 
     ax2 = fig.add_subplot(gs[0, 2:])
-    #ax2 = fig.add_subplot(2, 2, 2)
     data = tsp.stored_probability
     ax2.plot(data)
     ax2.set_title('Probability Plot')
     ax2.set_xlabel('Iterations')
     ax2.set_ylabel('Probability')
 
-    # Distance plot (bottom right)
     ax3 = fig.add_subplot(gs[1, 2:])
-    #ax3 = fig.add_subplot(2, 2, 4)
     res = tsp.stored_results
     data = [i.get_path_length() for i in res]
     ax3.plot(data)
