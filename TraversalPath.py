@@ -20,11 +20,9 @@ class TraversalPath:
         self.path = path
         self.num_cities = len(path)
 
-    def mutate(self, temperature, city_num):
-        iteration = max(round(temperature * city_num), 1)
-        for _ in repeat(None, iteration):
-            i, j = sorted(random.sample(range(0, self.num_cities), 2))
-            self.path[i:j + 1] = reversed(self.path[i:j + 1])
+    def mutate(self):
+        i, j = sorted(random.sample(range(0, self.num_cities), 2))
+        self.path[i:j + 1] = reversed(self.path[i:j + 1])
 
     @classmethod
     def _get_distance(cls, city_a:set, city_b:set) -> float:

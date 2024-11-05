@@ -31,55 +31,8 @@ class TSProblem:
         random.shuffle(shuffled)
         return TraversalPath(shuffled)
 
-    def generate_branch_and_bound_solution(self) -> TraversalPath:
-        num_cities = len(self.cities)
-        visited = [False] * num_cities
-        min_cost = float('inf')
-        final_path = []
-        tp = TraversalPath([])
-
-        def calculate_lower_bound(current_cost, current_city, unvisited):
-            bound = current_cost
-            for city in unvisited:
-                min_edge = float('inf')
-                for next_city in range(num_cities):
-                    if next_city != city and tp.distance_matrix[city][next_city]:
-                        min_edge = min(min_edge, tp.distance_matrix[city][next_city])
-                if min_edge != float('inf'):
-                    bound += min_edge
-            return bound
-
-        def backtrack(current_city, count, cost, path):
-            nonlocal min_cost, final_path
-
-            if count == num_cities and tp.distance_matrix[current_city][0]:
-                total_cost = cost + tp.distance_matrix[current_city][0]
-                if total_cost < min_cost:
-                    min_cost = total_cost
-                    final_path = path + [0]
-                return
-
-            unvisited = set(range(num_cities)) - set(path)
-            lower_bound = calculate_lower_bound(cost, current_city, unvisited)
-
-            if lower_bound >= min_cost:
-                return
-
-            for next_city in range(num_cities):
-                if not visited[next_city] and tp.distance_matrix[current_city][next_city]:
-                    visited[next_city] = True
-                    backtrack(next_city, count + 1,
-                              cost + tp.distance_matrix[current_city][next_city],
-                              path + [next_city])
-                    visited[next_city] = False
-
-        visited[0] = True
-        backtrack(0, 1, 0, [0])
-        return TraversalPath([self.cities[i] for i in final_path])
-
-
-    def run(self, max_iteration=100, temperature=1.0, early_return=10000, initial_solution:TraversalPath=None,
-            alpha=0.001, beta=0.1) -> TraversalPath:
+    def run(self, max_iteration=10000, temperature=1.0, early_return=10000,
+            initial_solution:TraversalPath=None, alpha=0.001, beta=0.1) -> TraversalPath:
         current_solution = initial_solution if initial_solution is not None else self.generate_random_solution()
         current_length = current_solution.get_path_length()
 
@@ -88,11 +41,12 @@ class TSProblem:
         i = 0
         while i < max_iteration:
             new_solution = TraversalPath(current_solution.path[:])
-            new_solution.mutate(temperature, self.city_count)
+            new_solution.mutate()
             new_length = new_solution.get_path_length()
 
             probability = self._accept_proba(current_length, new_length, temperature, beta)
-            if 0 < probability < 1:
+
+            if 0.0 < probability < 1.0:
                 self.stored_probability.append(probability)
 
             if probability >= random.random():
@@ -121,7 +75,7 @@ class TSProblem:
             return 1.0
         try:
             return math.exp(-math.pow(next_res - prev_res, 2) * beta / temperature)
-        except:
+        except ZeroDivisionError:
             return 0.0
 
 
